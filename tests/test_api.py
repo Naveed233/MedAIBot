@@ -104,7 +104,7 @@ def test_daily_cap_counts_only_accepted_questions(tmp_path, catalog, index):
         assert c.post("/ask", json=QUESTION).status_code == 401
         assert c.post("/ask", json=QUESTION, headers=ok).status_code == 200
         r = c.post("/ask", json=QUESTION, headers=ok)
-        assert r.status_code == 429 and "daily" in r.json()["detail"]
+        assert r.status_code == 429 and r.json()["detail"] == "capped at 1 questions a day for demo"
 
 
 def test_limits_reset_after_a_minute_and_on_a_new_day():

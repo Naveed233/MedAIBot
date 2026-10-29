@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # Public hosting: a shared code for /ask, and limits so a leaked link can't run up the model bill.
     access_code: SecretStr | None = None
     rate_limit_per_minute: int = Field(default=10, ge=0)  # per client IP; 0 turns it off
-    daily_question_cap: int = Field(default=200, ge=0)  # whole service, UTC day; 0 turns it off
+    daily_question_cap: int = Field(default=70, ge=0)  # whole service, UTC day; 0 turns it off
 
     log_level: str = "INFO"
     log_json: bool = True

@@ -19,6 +19,6 @@ services:
       - key: MEDAIBOT_RATE_LIMIT_PER_MINUTE
         value: "10"
       - key: MEDAIBOT_DAILY_QUESTION_CAP
-        value: "200"
+        value: "70"
       - key: PORT
         value: "8000"

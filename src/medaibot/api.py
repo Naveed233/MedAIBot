@@ -66,7 +66,7 @@ class UsageLimits:
             if day != self._day:
                 self._day, self._today = day, 0
             if self._today >= self.per_day:
-                return "the demo's daily question limit is reached; try again tomorrow (UTC)"
+                return f"capped at {self.per_day} questions a day for demo"
             self._today += 1
         return None
 

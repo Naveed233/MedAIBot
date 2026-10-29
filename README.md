@@ -90,7 +90,7 @@ The Dockerfile builds a slim, non-root image with the index baked in and a healt
 The demo is set up for Render's free tier with [render.yaml](render.yaml): one Docker web service, health-checked on `/ready`. Because a public URL can spend the OpenAI key, the hosted demo has three guards:
 
 - `MEDAIBOT_ACCESS_CODE`: `/ask` needs the shared code in an `x-access-code` header. The page asks for it, or reads it from a `#code=` link.
-- `MEDAIBOT_RATE_LIMIT_PER_MINUTE` (default 10 per client) and `MEDAIBOT_DAILY_QUESTION_CAP` (default 200 per UTC day). Both are in memory, so a restart resets them.
+- `MEDAIBOT_RATE_LIMIT_PER_MINUTE` (default 10 per client) and `MEDAIBOT_DAILY_QUESTION_CAP` (default 70 per UTC day; when it's reached, `/ask` returns 429 "capped at 70 questions a day for demo"). Both are in memory, so a restart resets them.
 - A spending limit on the OpenAI project whose key the service uses (set in the OpenAI dashboard).
 
 Free instances sleep after 15 minutes without traffic, so the first request after that takes about a minute. The AWS design I would use in production is in [docs/decisions.md](docs/decisions.md#aws-path); it is a design, not a deployment.

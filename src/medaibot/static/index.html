@@ -121,7 +121,7 @@ async function ask() {
     const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question, history: convo.slice(-3) }) });
     const body = await r.json();
     if (r.status === 401) { $("codebox").hidden = false; $("code").focus(); }
-    if (!r.ok) { $("out").innerHTML = `<section><p class="error">HTTP ${r.status}: ${esc(body.detail)}</p></section>`; return; }
+    if (!r.ok) { $("out").innerHTML = `<section><p class="error">${r.status === 429 ? "" : `HTTP ${r.status}: `}${esc(body.detail)}</p></section>`; return; }
     render(body);
     convo.push({ question: body.asked_as || body.question, answer: String(body.answer || "").slice(0, 1500) });
     $("q").value = "";
