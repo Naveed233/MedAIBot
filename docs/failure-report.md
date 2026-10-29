@@ -1,6 +1,6 @@
 # Failure report
 
-Generated from run `20261029T103836Z` (2026-10-29T10:38:36+00:00). Every number below comes from that run's JSON in `eval/results/`.
+Generated from run `20261029T120957Z` (2026-10-29T12:09:57+00:00). Every number below comes from that run's JSON in `eval/results/`.
 
 - Corpus: 1220 chunks from 5 openFDA labels; embedder `BAAI/bge-small-en-v1.5`.
 - Questions: 22 written by hand; gold chunks labelled by reading the chunks, not clinically reviewed.
@@ -23,28 +23,31 @@ Generated from run `20261029T103836Z` (2026-10-29T10:38:36+00:00). Every number 
 
 - none in this run
 
-## Agent (provider `offline-rules`)
+## Agent (provider `openai:gpt-5.4-mini`)
 
 | metric | value |
 |---|---|
-| correct abstain / answer decision | 0.95 (n=21) |
-| answer contains expected facts | 0.65 (n=17) |
-| cites a gold chunk | 0.71 (n=17) |
-| deterministic grounding checks passed | 1.00 (n=17) |
-| sentences the judge model marked supported (heuristic) | n/a |
+| correct abstain / answer decision | 1.00 (n=21) |
+| answer contains expected facts | 0.94 (n=18) |
+| cites a gold chunk | 1.00 (n=18) |
+| deterministic grounding checks passed | 1.00 (n=19) |
+| sentences the judge model marked supported (heuristic) | 1.00 (n=37) |
 | injection text not repeated | 1.00 (n=1) |
-| latency p50 / p95 | 10.3 ms / 15.5 ms |
+| latency p50 / p95 | 3524.9 ms / 4629.1 ms |
+
+### Compared with `offline-rules` (run `20261029T103836Z`)
+
+| metric | `openai:gpt-5.4-mini` | `offline-rules` |
+|---|---|---|
+| correct abstain / answer decision | 1.00 (n=21) | 0.95 (n=21) |
+| answer contains expected facts | 0.94 (n=18) | 0.65 (n=17) |
+| cites a gold chunk | 1.00 (n=18) | 0.71 (n=17) |
+| deterministic grounding checks passed | 1.00 (n=19) | 1.00 (n=17) |
+| latency p50 | 3524.9 ms | 10.3 ms |
 
 ### Per-question failures
 
-- **q01** (normal) 'What is the recommended dose of TAGRISSO for metastatic NSCLC?': failed cites_gold. Abstained=False (-). Tools: ['search_label']. Answer: 'The data also reflect exposure to TAGRISSO at the recommended dose of 80 mg daily given in combination with pemetrexed and platinum-based chemotherapy in 276 patients with EGFR mutation-positive local'
-- **q06** (normal) 'What is FARXIGA indicated for?': failed keywords_ok, cites_gold. Abstained=False (-). Tools: ['search_label']. Answer: 'FARXIGA is a sodium-glucose cotransporter 2 (SGLT2) inhibitor indicated:'
-- **q07** (normal) 'Should FARXIGA be started in a patient whose eGFR is below 25?': failed keywords_ok. Abstained=False (-). Tools: ['search_label']. Answer: '• If the eGFR falls below 25 mL/min/1.73 m 2 while receiving treatment with FARXIGA, patients may continue FARXIGA 10 mg orally once daily to reduce the risk of eGFR decline, ESKD, CV death and hHF.'
-- **q08** (normal) 'How does osimertinib work?': failed abstain_correct. Abstained=True (the retrieved label text does not address the question). Tools: ['search_label']. Answer: "I can't answer this from the indexed labels: the retrieved label text does not address the question"
-- **q11** (normal) 'How should CALQUENCE capsules be stored?': failed keywords_ok, cites_gold. Abstained=False (-). Tools: ['search_label']. Answer: 'Advise patients not to open, break or chew the capsules.'
-- **q12** (normal) 'How can TAGRISSO be given to a patient who has difficulty swallowing tablets?': failed keywords_ok, cites_gold. Abstained=False (-). Tools: ['search_label']. Answer: 'Tablets may be dispersed in water for patients who have difficulty swallowing, or for nasogastric tube administration [see Dosage and Administration (2.4) ].'
-- **q17** (katakana) 'タグリッソの用量は？': failed keywords_ok, cites_gold. Abstained=False (-). Tools: ['search_label']. Answer: '2.3 Recommended Dosage and Administration Recommended Dosage Table 2 provides the recommended dosage of TAGRISSO by indication.'
-- **q18** (katakana) 'カルケンスの相互作用は？': failed keywords_ok. Abstained=False (-). Tools: ['search_label']. Answer: '• Alternatively, if the inhibitor will be used short-term, interrupt CALQUENCE [see Recommended Dosage for Drug Interactions (2.2) ] .'
+- **q19** (katakana) 'フォシーガは妊娠中に使えますか？': failed keywords_ok. Abstained=False (-). Tools: ['search_label']. Answer: 'フォシーガは、妊娠中には推奨されません。 ラベルでは、動物データに基づき胎児への潜在的リスクがあるため、女性に注意喚起するよう記載されています。 妊婦での限られたデータでは、先天異常や流産の薬剤関連リスクは判断できないとされています。'
 
 ## Known limitations (not measured above)
 

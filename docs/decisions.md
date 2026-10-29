@@ -34,9 +34,9 @@ Short records of what was chosen, what was rejected, and what would change the d
 | judge model | supported / partial / unsupported per sentence, including population and conditions | a heuristic second opinion, not proof |
 | live label | indexed label version vs live openFDA record | whether the evidence may be out of date |
 
-A failure gets one retry with the problems listed; a second failure is an abstention. A model outage is an abstention in the CLI and HTTP 503 in the API, never a normal-looking answer.
+A failure gets one retry with the problems listed; a second failure is an abstention. A judge verdict of `partial` counts as a failure: it usually means a dropped population or condition, and in run `20261029T120704Z` a `partial` answer about grapefruit gave inducer advice for an inhibitor. A model outage is an abstention in the CLI and HTTP 503 in the API, never a normal-looking answer.
 
-**Known gap.** The deterministic tier cannot tell that "80 mg" belongs to a different population. The offline baseline shows exactly this on q01. That is what the judge tier is for, and it is still only a heuristic.
+**Known gap.** The deterministic tier cannot tell that "80 mg" belongs to a different population. The offline baseline shows exactly this on q01. That is what the judge tier is for, and it is still only a heuristic: in run `20261029T120957Z` it marked "not recommended during pregnancy" as supported when the label limits that to the second and third trimesters. The judge is currently the same model as the answerer; a stronger, separate judge model (`MEDAIBOT_JUDGE_MODEL`) is the next thing to try.
 
 ## 5. Fine-tuning: not now
 
@@ -66,6 +66,6 @@ Design only. Not deployed.
 | corpus and index | raw labels and built index in versioned S3 objects; the index manifest records embedder and label versions, and a mismatch fails at startup (`IndexMismatch`) |
 | secrets | Secrets Manager injected as environment variables; nothing in the image |
 | model | Amazon Bedrock behind the same provider interface, in the VPC, so prompts stay inside the account |
-| observability | JSON logs to CloudWatch (request id, tool, latency, abstained, token usage); metrics on abstain rate, judge "unsupported" rate, p95 latency |
+| observability | JSON logs to CloudWatch (request id, tool, latency, abstained, token usage); metrics on abstain rate, judge partial/unsupported rate, p95 latency |
 | delivery | GitHub Actions: tests, image build, push to ECR, deploy; infrastructure as code with CDK or Terraform |
 | evaluation in CI | the offline suite on every push; the model-backed eval nightly, failing the build if hit@5 or abstain accuracy drops below the last release |

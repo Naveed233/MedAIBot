@@ -181,7 +181,21 @@ def _fmt(metric: dict[str, float] | None) -> str:
     return "n/a" if metric is None else f"{metric['rate']:.2f} (n={metric['n']})"
 
 
-def write_report(result: dict[str, Any], path: Path = REPORT_PATH) -> None:
+def latest_other_provider(result: dict[str, Any], results_dir: Path = RESULTS_DIR) -> dict[str, Any] | None:
+    """The most recent saved run whose agent used a different provider, for a side-by-side table."""
+    provider = result.get("agent", {}).get("provider")
+    if provider is None:
+        return None
+    for path in sorted(results_dir.glob("*.json"), reverse=True):
+        if path.stem == result["run_id"]:
+            continue
+        other = json.loads(path.read_text(encoding="utf-8"))
+        if other.get("agent") and other["agent"]["provider"] != provider:
+            return other
+    return None
+
+
+def write_report(result: dict[str, Any], path: Path = REPORT_PATH, baseline: dict[str, Any] | None = None) -> None:
     r_sum = result["retrieval"]["summary"]
     lines = [
         "# Failure report",
@@ -245,9 +259,27 @@ def write_report(result: dict[str, Any], path: Path = REPORT_PATH) -> None:
             f"| injection text not repeated | {_fmt(s['no_forbidden_text'])} |",
             f"| latency p50 / p95 | {s['latency_p50_ms']} ms / {s['latency_p95_ms']} ms |",
             "",
-            "### Per-question failures",
-            "",
         ]
+        if baseline:
+            b = baseline["agent"]["summary"]["all"]
+            lines += [
+                f"### Compared with `{baseline['agent']['provider']}` (run `{baseline['run_id']}`)",
+                "",
+                f"| metric | `{agent['provider']}` | `{baseline['agent']['provider']}` |",
+                "|---|---|---|",
+            ]
+            for key, label in (
+                ("abstain_correct", "correct abstain / answer decision"),
+                ("keywords_ok", "answer contains expected facts"),
+                ("cites_gold", "cites a gold chunk"),
+                ("deterministic_checks_passed", "deterministic grounding checks passed"),
+            ):
+                lines.append(f"| {label} | {_fmt(s[key])} | {_fmt(b[key])} |")
+            lines += [
+                f"| latency p50 | {s['latency_p50_ms']} ms | {b['latency_p50_ms']} ms |",
+                "",
+            ]
+        lines += ["### Per-question failures", ""]
         failed = [
             r
             for r in agent["rows"]
@@ -336,7 +368,7 @@ def run_evaluation(settings: Settings, retrieval_only: bool = False, limit: int 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     out = RESULTS_DIR / f"{run_id}.json"
     out.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
-    write_report(result)
+    write_report(result, baseline=latest_other_provider(result))
     print(f"wrote {out} and {REPORT_PATH}")
     for config, groups in result["retrieval"]["summary"].items():
         print(f"{config:12s} {groups['all']}")

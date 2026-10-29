@@ -27,7 +27,7 @@ question ──> query normalisation ──> agent loop (max 6 steps) ───�
 
 ## Results
 
-From `eval/results/` run `20261029T103836Z`, 18 questions with gold chunks (full report: [docs/failure-report.md](docs/failure-report.md)).
+From `eval/results/` run `20261029T120957Z`, 18 questions with gold chunks (full report: [docs/failure-report.md](docs/failure-report.md)).
 
 | retrieval config | hit@5 | MRR | hit@5 English | hit@5 Japanese |
 |---|---|---|---|---|
@@ -37,6 +37,19 @@ From `eval/results/` run `20261029T103836Z`, 18 questions with gold chunks (full
 | hybrid + normalisation | 1.0 | 0.907 | 1.0 | 1.0 |
 
 The Japanese questions (タグリッソの用量は？) find nothing until the katakana brand name is mapped to TAGRISSO and 用量 to "recommended dosage". The question set is small and was written by reading the labels, so these numbers show failure modes, not reliability.
+
+The agent, on all 22 questions with the live openFDA tool off. `offline-rules` is a deterministic extractive baseline (run `20261029T103836Z`).
+
+| agent | correct answer / abstain decision | expected facts in answer | cites a gold chunk | latency p50 |
+|---|---|---|---|---|
+| `openai:gpt-5.4-mini` | 1.00 (n=21) | 0.94 (n=18) | 1.00 (n=18) | 3.5 s |
+| `offline-rules` | 0.95 (n=21) | 0.65 (n=17) | 0.71 (n=17) | 10 ms |
+
+What the runs showed:
+
+- In run `20261029T120704Z` the grapefruit question (not in the TAGRISSO label) was answered with the dose increase for strong CYP3A *inducers*. Grapefruit is a CYP3A *inhibitor*. The judge marked that sentence `partial`, but only `unsupported` triggered a retry. Now `partial` does too, and the next run abstained.
+- In run `20261029T120957Z` the Japanese pregnancy answer for FARXIGA said 妊娠中には推奨されません ("not recommended during pregnancy"). The label says "not recommended during the second and third trimesters". The judge marked it `supported`; the keyword check caught it. The judge is the same model that wrote the answer.
+- Each number is from a single run, and model answers change between runs.
 
 ## Run it
 
