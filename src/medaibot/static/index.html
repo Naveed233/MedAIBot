@@ -5,23 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MedAIBot</title>
 <style>
-  :root { --bg: #f7f7f5; --fg: #1d1d1b; --muted: #6b6b66; --card: #ffffff; --line: #e2e2dc; --accent: #2f5d8a; --ok: #2e7d4f; --warn: #a15c00; --bad: #b3261e; }
+  /* Mulberry and gold on white. Gold is too light for text on white, so it is only used for rules and focus. */
+  :root { --bg: #ffffff; --fg: #2d2a2c; --muted: #6e666b; --card: #ffffff; --line: #e8dfe4; --brand: #830051; --gold: #f0ab00;
+          --accent: #830051; --btn: #830051; --btn-hover: #66003f; --on-btn: #ffffff; --ok: #2e7d4f; --warn: #9a5b00; --bad: #b3261e; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #161615; --fg: #ececea; --muted: #a3a39d; --card: #1f1f1e; --line: #33332f; --accent: #8db6e0; --ok: #7cc79b; --warn: #e0a54d; --bad: #f08a80; }
+    :root { --bg: #171315; --fg: #f1ebee; --muted: #b3a8ae; --card: #211b1e; --line: #3b3036; --brand: #6e0045;
+            --accent: #ef9fcb; --btn: #a3216b; --btn-hover: #b8357f; --ok: #7cc79b; --warn: #f0b84d; --bad: #f08a80; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Hiragino Sans", sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+  .band { background: var(--brand); color: #ffffff; border-bottom: 4px solid var(--gold); }
+  .band .inner { max-width: 860px; margin: 0 auto; padding: 20px 16px 16px; }
+  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: .01em; }
+  .sub { color: #f3e3ec; margin: 0; font-size: 13px; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   form { display: flex; gap: 8px; }
   input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); font: inherit; }
-  button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--bg); font: inherit; cursor: pointer; }
+  input { min-width: 0; }
+  input:focus { border-color: var(--accent); }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--btn); color: var(--on-btn, #ffffff); font: inherit; cursor: pointer; }
+  button:hover:not(:disabled) { background: var(--btn-hover); }
   button:disabled { opacity: .5; cursor: wait; }
   .examples { margin: 10px 0 20px; display: flex; flex-wrap: wrap; gap: 6px; }
   .examples button { background: transparent; color: var(--accent); border: 1px solid var(--line); padding: 4px 10px; font-size: 13px; }
+  .examples button:hover { background: transparent; border-color: var(--accent); }
   section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 14px; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); margin: 0 0 10px; }
   .answer { font-size: 16px; }
   .abstain { color: var(--warn); }
   sup a { color: var(--accent); text-decoration: none; margin-left: 2px; }
@@ -32,12 +43,21 @@
   code { font-size: 12px; overflow-wrap: anywhere; }
   .why { color: var(--muted); font-style: italic; }
   .error { color: var(--bad); }
+  .codebox { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .codebox input { max-width: 240px; padding: 6px 10px; }
+  .codebox[hidden] { display: none; }
 </style>
 </head>
 <body>
-<main>
+<header class="band"><div class="inner">
   <h1>MedAIBot</h1>
-  <p class="sub">Cited answers from five US FDA drug labels, with the agent's tool trace and grounding checks. Demo project: not medical advice, not affiliated with AstraZeneca. US labels differ from Japanese PMDA labels.</p>
+  <p class="sub">Cited answers from five US FDA drug labels, with the agent's tool trace and grounding checks. Demo project: not medical advice, not affiliated with or endorsed by AstraZeneca. US labels differ from Japanese PMDA labels.</p>
+</div></header>
+<main>
+  <div class="codebox" id="codebox" hidden>
+    <label for="code">Access code</label>
+    <input id="code" type="password" autocomplete="off" placeholder="from the person who shared this link">
+  </div>
   <form id="ask">
     <input id="q" name="q" autocomplete="off" placeholder="Ask about TAGRISSO, LYNPARZA, FARXIGA, IMFINZI or CALQUENCE" required maxlength="1000">
     <button id="go" type="submit">Ask</button>
@@ -64,14 +84,30 @@ for (const e of EXAMPLES) {
 }
 $("ask").onsubmit = (ev) => { ev.preventDefault(); ask(); };
 
+// The hosted demo asks for a shared access code. A link can carry it as #code=..., which the
+// browser never sends to the server. The code is remembered in this browser only.
+const store = { get() { try { return localStorage.getItem("medaibot-code") || ""; } catch { return ""; } },
+                set(v) { try { localStorage.setItem("medaibot-code", v); } catch {} } };
+function codeFromLink() {
+  const fromLink = new URLSearchParams(location.hash.slice(1)).get("code");
+  if (fromLink) { store.set(fromLink); history.replaceState(null, "", location.pathname); }
+  $("code").value = store.get();
+}
+codeFromLink();
+window.addEventListener("hashchange", codeFromLink);
+$("code").onchange = () => store.set($("code").value.trim());
+fetch("/ready").then((r) => r.json()).then((ready) => { if (ready.access_code_required) $("codebox").hidden = false; }).catch(() => {});
+
 async function ask() {
   const question = $("q").value.trim();
   if (!question) return;
   $("go").disabled = true;
   $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
   try {
-    const r = await fetch("/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question }) });
+    const headers = { "content-type": "application/json", "x-access-code": $("code").value.trim() };
+    const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question }) });
     const body = await r.json();
+    if (r.status === 401) { $("codebox").hidden = false; $("code").focus(); }
     if (!r.ok) { $("out").innerHTML = `<section><p class="error">HTTP ${r.status}: ${esc(body.detail)}</p></section>`; return; }
     render(body);
   } catch (err) {

@@ -1,0 +1,24 @@
+# Render Blueprint: one free web service built from the Dockerfile.
+# Secrets marked sync: false are typed into the Render dashboard when the Blueprint is created.
+services:
+  - type: web
+    name: medaibot
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /ready
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MEDAIBOT_ACCESS_CODE
+        sync: false
+      - key: MEDAIBOT_LLM_PROVIDER
+        value: openai
+      - key: MEDAIBOT_LLM_MODEL
+        value: gpt-5.4-mini
+      - key: MEDAIBOT_RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: MEDAIBOT_DAILY_QUESTION_CAP
+        value: "200"
+      - key: PORT
+        value: "8000"

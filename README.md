@@ -83,7 +83,15 @@ Configuration is read from environment variables or `.env` (see `.env.example`).
 
 ## Deployment
 
-The Dockerfile builds a slim, non-root image with the index baked in and a health check. CI runs lint and tests, builds the image and smoke-tests `/health`, `/ready` and `/ask`. It has not been deployed. The AWS design I would use is in [docs/decisions.md](docs/decisions.md#aws-path).
+The Dockerfile builds a slim, non-root image with the index baked in and a health check. CI runs lint and tests, builds the image and smoke-tests `/health`, `/ready` and `/ask`, both open and with an access code on a non-default `PORT`.
+
+The demo is set up for Render's free tier with [render.yaml](render.yaml): one Docker web service, health-checked on `/ready`. Because a public URL can spend the OpenAI key, the hosted demo has three guards:
+
+- `MEDAIBOT_ACCESS_CODE`: `/ask` needs the shared code in an `x-access-code` header. The page asks for it, or reads it from a `#code=` link.
+- `MEDAIBOT_RATE_LIMIT_PER_MINUTE` (default 10 per client) and `MEDAIBOT_DAILY_QUESTION_CAP` (default 200 per UTC day). Both are in memory, so a restart resets them.
+- A spending limit on the OpenAI project whose key the service uses (set in the OpenAI dashboard).
+
+Free instances sleep after 15 minutes without traffic, so the first request after that takes about a minute. The AWS design I would use in production is in [docs/decisions.md](docs/decisions.md#aws-path); it is a design, not a deployment.
 
 ## Limitations
 

@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import sys
 import time
 
@@ -128,7 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("serve", help="run the HTTP API")
     p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")), help="default: $PORT or 8000")
     p.set_defaults(func=cmd_serve)
     return parser
 

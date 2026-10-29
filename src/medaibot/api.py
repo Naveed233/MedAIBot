@@ -1,8 +1,11 @@
 """HTTP API. Failures return real status codes, never an apology dressed up as a 200 answer."""
 
+import hmac
 import logging
+import threading
 import time
 import uuid
+from collections import defaultdict, deque
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -25,6 +28,53 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
 
 
+class UsageLimits:
+    """In-memory limits for one instance. They reset on restart, which is enough for a demo."""
+
+    def __init__(self, per_minute: int, per_day: int, clock: Callable[[], float] = time.time) -> None:
+        self.per_minute = per_minute
+        self.per_day = per_day
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._recent: dict[str, deque[float]] = defaultdict(deque)
+        self._day = ""
+        self._today = 0
+
+    def attempt(self, client: str) -> str | None:
+        """Counts every /ask attempt, including wrong access codes. Returns a reason when over the limit."""
+        if not self.per_minute:
+            return None
+        now = self._clock()
+        with self._lock:
+            recent = self._recent[client]
+            while recent and now - recent[0] >= 60:
+                recent.popleft()
+            if len(recent) >= self.per_minute:
+                return "too many questions from this address; wait a minute"
+            recent.append(now)
+        return None
+
+    def question(self) -> str | None:
+        """Counts accepted questions against the daily cap."""
+        if not self.per_day:
+            return None
+        day = time.strftime("%Y-%m-%d", time.gmtime(self._clock()))
+        with self._lock:
+            if day != self._day:
+                self._day, self._today = day, 0
+            if self._today >= self.per_day:
+                return "the demo's daily question limit is reached; try again tomorrow (UTC)"
+            self._today += 1
+        return None
+
+
+def client_ip(request: Request) -> str:
+    # Behind Render's proxy the client is the first X-Forwarded-For entry. A client can spoof it,
+    # so the access code and the daily cap are the real limits; this one only slows a single user.
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return forwarded or (request.client.host if request.client else "unknown")
+
+
 def create_app(settings: Settings | None = None, runtime: Runtime | None = None) -> FastAPI:
     settings = settings or get_settings()
 
@@ -42,6 +92,8 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
         yield
 
     app = FastAPI(title="MedAIBot", version=__version__, lifespan=lifespan)
+    limits = UsageLimits(settings.rate_limit_per_minute, settings.daily_question_cap)
+    access_code = settings.access_code.get_secret_value() if settings.access_code else None
 
     @app.middleware("http")
     async def request_log(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
@@ -82,10 +134,19 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
             "label_versions": rt.index.meta.get("label_versions", {}),
             "llm_provider": settings.llm_provider,
             "live_openfda": settings.enable_live_openfda,
+            "access_code_required": access_code is not None,
         }
 
     @app.post("/ask", response_model=AgentAnswer)
     def ask(body: AskRequest, request: Request) -> AgentAnswer:
+        if reason := limits.attempt(client_ip(request)):
+            raise HTTPException(status_code=429, detail=reason)
+        if access_code is not None:
+            given = request.headers.get("x-access-code", "")
+            if not hmac.compare_digest(given.encode(), access_code.encode()):
+                raise HTTPException(status_code=401, detail="access code missing or wrong")
+        if reason := limits.question():
+            raise HTTPException(status_code=429, detail=reason)
         rt = _runtime(request)
         try:
             answer = rt.agent.run(body.question)

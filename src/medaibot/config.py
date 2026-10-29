@@ -37,10 +37,15 @@ class Settings(BaseSettings):
     openfda_api_key: SecretStr | None = None
     enable_live_openfda: bool = True
 
+    # Public hosting: a shared code for /ask, and limits so a leaked link can't run up the model bill.
+    access_code: SecretStr | None = None
+    rate_limit_per_minute: int = Field(default=10, ge=0)  # per client IP; 0 turns it off
+    daily_question_cap: int = Field(default=200, ge=0)  # whole service, UTC day; 0 turns it off
+
     log_level: str = "INFO"
     log_json: bool = True
 
-    @field_validator("llm_model", "judge_model", "openai_base_url", "openai_api_key", mode="before")
+    @field_validator("llm_model", "judge_model", "openai_base_url", "openai_api_key", "access_code", mode="before")
     @classmethod
     def _blank_is_none(cls, value: object) -> object:
         # An empty line in .env such as "MEDAIBOT_LLM_MODEL=" means "not set".

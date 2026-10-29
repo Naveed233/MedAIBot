@@ -4,12 +4,15 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           python-version: "3.12"
       - run: uv sync --frozen --extra openai
@@ -22,7 +25,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build -t medaibot:ci .
       - name: Start the container and check health and readiness
         run: |
@@ -31,5 +34,13 @@ jobs:
           curl -fsS localhost:8000/ready
           curl -fsS -X POST localhost:8000/ask -H 'content-type: application/json' \
             -d '{"question": "What are the contraindications for TAGRISSO?"}' | python3 -c "import json,sys; a=json.load(sys.stdin); assert not a['abstained'], a; print(a['answer'])"
+      - name: Check the hosted settings (PORT and access code)
+        run: |
+          docker run -d --name hosted -p 9000:9000 -e PORT=9000 -e MEDAIBOT_ACCESS_CODE=ci-code medaibot:ci
+          for i in $(seq 1 30); do curl -fsS localhost:9000/ready && break; sleep 2; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:9000/ask -H 'content-type: application/json' \
+            -d '{"question": "dose?"}')" = 401
+          curl -fsS -X POST localhost:9000/ask -H 'content-type: application/json' -H 'x-access-code: ci-code' \
+            -d '{"question": "What are the contraindications for TAGRISSO?"}' > /dev/null
       - if: always()
-        run: docker logs app || true
+        run: docker logs app || true; docker logs hosted || true
