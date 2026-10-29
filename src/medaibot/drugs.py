@@ -32,8 +32,10 @@ class DrugCatalog:
         for drug in drugs:
             for name in drug.names:
                 norm = normalize(name)
-                # Japanese has no word boundaries, so match the name anywhere.
-                pattern = re.escape(norm) if is_cjk(norm) else rf"\b{re.escape(norm)}\b"
+                # Japanese has no word boundaries, so match the name anywhere. A Latin name only
+                # needs no Latin letter or digit beside it: \b fails in "tagrissoの", because Python
+                # counts Japanese characters as word characters.
+                pattern = re.escape(norm) if is_cjk(norm) else rf"(?<![a-z0-9]){re.escape(norm)}(?![a-z0-9])"
                 self._patterns.append((re.compile(pattern), drug.key))
         self._by_set_id = {d.set_id: d for d in drugs}
 

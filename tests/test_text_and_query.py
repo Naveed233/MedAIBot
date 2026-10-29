@@ -57,3 +57,8 @@ def test_catalog_matches_aliases_and_respects_word_boundaries(catalog):
     assert [d.key for d in catalog.find_in_text("フォシーガ")] == ["farxiga"]
     assert [d.key for d in catalog.find_in_text("osimertinib mesylate")] == ["tagrisso"]
     assert catalog.find_in_text("imfinzified") == []
+
+
+def test_a_latin_drug_name_inside_a_japanese_sentence_is_found(catalog):
+    assert [d.key for d in catalog.find_in_text("TAGRISSOの副作用は？")] == ["tagrisso"]
+    assert normalise_query("LYNPARZAの用量は？", catalog).drug == "lynparza"
