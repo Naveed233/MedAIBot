@@ -96,11 +96,16 @@ function codeFromLink() {
 codeFromLink();
 window.addEventListener("hashchange", codeFromLink);
 $("code").onchange = () => store.set($("code").value.trim());
-fetch("/ready").then((r) => r.json()).then((ready) => { if (ready.access_code_required) $("codebox").hidden = false; }).catch(() => {});
+// The page talks to the server it was loaded from, so it does nothing useful when opened as a file.
+const served = location.protocol === "http:" || location.protocol === "https:";
+const notServed = `<section><p class="error">This page needs the MedAIBot server. Start it with <code>uv run medaibot serve</code> and open http://127.0.0.1:8000.</p></section>`;
+if (!served) $("out").innerHTML = notServed;
+else fetch("/ready").then((r) => r.json()).then((ready) => { if (ready.access_code_required) $("codebox").hidden = false; }).catch(() => {});
 
 async function ask() {
   const question = $("q").value.trim();
   if (!question) return;
+  if (!served) { $("out").innerHTML = notServed; return; }
   $("go").disabled = true;
   $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
   try {
