@@ -24,6 +24,7 @@ question ──> query normalisation ──> agent loop (max 6 steps) ───�
 - **Retrieval.** Own BM25 implementation for exact terms (drug names, doses), FAISS inner-product search over `BAAI/bge-small-en-v1.5` embeddings for meaning, and Reciprocal Rank Fusion so the two score scales never need to be compared. Filters by drug and section.
 - **Agent.** The model must call a tool on every step and must finish with a structured `final_answer`. Each tool call carries a `reason`, so the trace shows why the agent did what it did. Retrieved text only ever enters the conversation as tool results; instruction-like text in documents is flagged.
 - **Checks instead of a confidence score.** An earlier project of mine returned `random.uniform(0.75, 0.98)` as "confidence". This one reports what was actually checked, and abstains when the checks fail twice.
+- **Follow-up questions.** The page sends the last three turns with each question, so the server keeps no state. A follow-up such as "Which of those are the most serious?" is first rewritten into a standalone question by one model call. If that fails, the drug from the earlier turn is carried over, and a rewrite may not bring in a drug nobody named. The agent then answers the standalone question from fresh retrieval with the same checks; earlier answers are context, never evidence.
 
 ## Results
 
@@ -74,6 +75,7 @@ Configuration is read from environment variables or `.env` (see `.env.example`).
 | `src/medaibot/corpus.py` | section-aware chunking with provenance |
 | `src/medaibot/index.py` | BM25, FAISS, RRF, filters, versioned save/load |
 | `src/medaibot/query.py` | drug alias detection and Japanese term mapping |
+| `src/medaibot/followup.py` | follow-up questions rewritten into standalone ones |
 | `src/medaibot/tools.py` | typed tools with timeouts and readable errors |
 | `src/medaibot/agent.py` | bounded loop, retry, abstention |
 | `src/medaibot/grounding.py` | deterministic checks and the judge |
@@ -99,3 +101,4 @@ Free instances sleep after 15 minutes without traffic, so the first request afte
 - HTML table fields are skipped; tables that openFDA flattens into prose are indexed without their row and column structure.
 - The judge is a model and can be wrong. Nothing here is clinical validation.
 - Japanese support is text-level query mapping only. There is no speech recognition in this project.
+- Follow-up handling is covered by tests and live runs, but the evaluation set is single-turn.

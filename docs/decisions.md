@@ -56,6 +56,14 @@ openFDA can return several records for one product. FARXIGA has a repackager lab
 
 TAGRISSO's label has no `openfda` brand metadata, so a brand-name search does not find it. Pinning by `set_id` avoids that too.
 
+## 7. Follow-up questions: history held by the client
+
+The page keeps the last three turns and sends them with each question. The server stores nothing, which suits a free host that loses local files on restart, and no conversation data sits on the server. A server-side store would come with audit or multi-device needs.
+
+A follow-up is rewritten into a standalone question before the agent sees it (`followup.py`). One model call resolves "it" and "those"; a bare drug name sent after "which drug?" completes the earlier question. Two deterministic guards wrap the model: the rewrite may only use drugs that the user or the earlier turns named, and if the rewrite fails, the drug from the most recent turn is carried over. The agent then answers the standalone question from fresh retrieval, and every citation must come from that run, so an earlier answer can never become evidence.
+
+The first prompt allowed "return it unchanged if it stands on its own", and the model returned "Which of those are the most serious?" unchanged in 2 of 3 tries. Naming the reference words and giving one example fixed it in 12 of 12 tries across four follow-ups. Those live checks also found that a Latin drug name inside Japanese text ("TAGRISSOの副作用は？") was not detected, because `\b` treats Japanese characters as word characters; the name match now only requires no Latin letter or digit beside it.
+
 ## AWS path
 
 Design only. Not deployed.

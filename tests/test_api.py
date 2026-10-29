@@ -115,3 +115,24 @@ def test_limits_reset_after_a_minute_and_on_a_new_day():
     assert limits.question() is not None
     now[0] = 86_400.0
     assert limits.attempt("a") is None and limits.question() is None
+
+
+def test_a_follow_up_is_answered_about_the_earlier_drug(client):
+    history = [{"question": "What are the contraindications for TAGRISSO?", "answer": "None."}]
+    question = "How can it be given to a patient who has difficulty swallowing tablets?"
+    r = client.post("/ask", json={"question": question, "history": history})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["question"] == question
+    assert body["asked_as"] == f"About TAGRISSO: {question}"
+    assert all(c["drug"] == "TAGRISSO" for c in body["citations"])
+
+
+def test_a_question_without_history_is_not_rewritten(client):
+    body = client.post("/ask", json=QUESTION).json()
+    assert body["asked_as"] is None and body["question"] == QUESTION["question"]
+
+
+def test_history_is_capped_at_three_turns(client):
+    turn = {"question": "What is the dose of TAGRISSO?", "answer": ""}
+    assert client.post("/ask", json={"question": "And for children?", "history": [turn] * 4}).status_code == 422

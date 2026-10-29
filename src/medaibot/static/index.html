@@ -46,6 +46,9 @@
   .codebox { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
   .codebox input { max-width: 240px; padding: 6px 10px; }
   .codebox[hidden] { display: none; }
+  button.link { background: transparent; color: var(--accent); border: 0; padding: 0; font-size: 13px; text-decoration: underline; }
+  button.link:hover:not(:disabled) { background: transparent; }
+  .readas { margin: 0 0 8px; }
 </style>
 </head>
 <body>
@@ -74,6 +77,7 @@ const EXAMPLES = [
   "Is the FARXIGA label in your index the latest version?",
 ];
 const $ = (id) => document.getElementById(id);
+const FIRST_PROMPT = "Ask about TAGRISSO, LYNPARZA, FARXIGA, IMFINZI or CALQUENCE";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 for (const e of EXAMPLES) {
@@ -96,6 +100,10 @@ function codeFromLink() {
 codeFromLink();
 window.addEventListener("hashchange", codeFromLink);
 $("code").onchange = () => store.set($("code").value.trim());
+// Earlier turns of this conversation, oldest first. The server uses the last three to read a
+// follow-up ("Which of those are serious?"); they are never used as evidence.
+let convo = [];
+
 // The page talks to the server it was loaded from, so it does nothing useful when opened as a file.
 const served = location.protocol === "http:" || location.protocol === "https:";
 const notServed = `<section><p class="error">This page needs the MedAIBot server. Start it with <code>uv run medaibot serve</code> and open http://127.0.0.1:8000.</p></section>`;
@@ -110,11 +118,14 @@ async function ask() {
   $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
   try {
     const headers = { "content-type": "application/json", "x-access-code": $("code").value.trim() };
-    const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question }) });
+    const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question, history: convo.slice(-3) }) });
     const body = await r.json();
     if (r.status === 401) { $("codebox").hidden = false; $("code").focus(); }
     if (!r.ok) { $("out").innerHTML = `<section><p class="error">HTTP ${r.status}: ${esc(body.detail)}</p></section>`; return; }
     render(body);
+    convo.push({ question: body.asked_as || body.question, answer: String(body.answer || "").slice(0, 1500) });
+    $("q").value = "";
+    $("q").placeholder = "Ask a follow-up, or a new question";
   } catch (err) {
     $("out").innerHTML = `<section><p class="error">${esc(err)}</p></section>`;
   } finally {
@@ -140,12 +151,17 @@ function render(a) {
       ${t.arguments.reason ? `<div class="why">why: ${esc(t.arguments.reason)}</div>` : ""}
       <div class="meta">→ ${esc(t.summary)}</div>${t.flags.length ? `<div class="bad">flags: ${esc(t.flags.join(", "))}</div>` : ""}</li>`;
   }).join("");
+  const earlier = convo.length ? `<section><h2>Earlier in this conversation</h2><ol>${convo.map((t) => `<li class="meta">${esc(t.question)}</li>`).join("")}</ol>
+      <button type="button" class="link" id="newchat">Start a new conversation</button></section>` : "";
+  const readAs = a.asked_as ? `<p class="meta readas">Read as: ${esc(a.asked_as)}</p>` : "";
   $("out").innerHTML = `
-    <section><h2>Answer</h2><div class="answer">${answer}</div></section>
+    ${earlier}
+    <section><h2>Answer</h2>${readAs}<div class="answer">${answer}</div></section>
     ${a.citations.length ? `<section><h2>Sources</h2><ol>${sources}</ol></section>` : ""}
     <section><h2>Checks</h2>${checks}</section>
     <section><h2>Agent trace · ${esc(a.provider)} · ${a.latency_ms.toFixed(0)} ms</h2><ol>${trace}</ol></section>
     <p class="meta">${esc(a.disclaimer)}</p>`;
+  if ($("newchat")) $("newchat").onclick = () => { convo = []; $("out").innerHTML = ""; $("q").placeholder = FIRST_PROMPT; $("q").focus(); };
 }
 </script>
 </body>

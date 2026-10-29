@@ -95,6 +95,8 @@ class TraceStep(BaseModel):
 
 class AgentAnswer(BaseModel):
     question: str
+    # The standalone question the agent answered, when a follow-up was rewritten.
+    asked_as: str | None = None
     answer: str
     sentences: list[AnswerSentence]
     citations: list[Citation]

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from medaibot import __version__
 from medaibot.config import Settings, get_settings
+from medaibot.followup import MAX_TURNS, Turn, resolve_follow_up
 from medaibot.logging_setup import configure_logging, log_event
 from medaibot.models import AgentAnswer
 from medaibot.runtime import Runtime, load_runtime
@@ -26,6 +27,8 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
+    # Earlier turns, oldest first, held by the client so the server stays stateless.
+    history: list[Turn] = Field(default_factory=list, max_length=MAX_TURNS)
 
 
 class UsageLimits:
@@ -149,11 +152,16 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
             raise HTTPException(status_code=429, detail=reason)
         rt = _runtime(request)
         try:
-            answer = rt.agent.run(body.question)
+            agent = rt.agent
+            rewriter = agent.provider if settings.llm_provider == "openai" else None
+            resolved = resolve_follow_up(body.question, body.history, rt.catalog, rewriter)
+            answer = agent.run(resolved.question)
         except ValueError as exc:  # configuration problems, e.g. no model name
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         if any(s.kind == "error" and s.summary.startswith("model call failed") for s in answer.trace):
             raise HTTPException(status_code=503, detail=answer.abstain_reason)
+        if resolved.rewritten:
+            answer = answer.model_copy(update={"question": body.question, "asked_as": resolved.question})
         return answer
 
     @app.get("/", include_in_schema=False)
