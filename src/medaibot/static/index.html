@@ -77,11 +77,11 @@
 </main>
 <script>
 const EXAMPLES = [
-  "What are the contraindications for TAGRISSO?",
+  "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
   "タグリッソの用量は？",
   "Does TAGRISSO interact with grapefruit juice?",
-  "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
   "Is the FARXIGA label in your index the latest version?",
+  "What are the contraindications for TAGRISSO?",
 ];
 const $ = (id) => document.getElementById(id);
 const FIRST_PROMPT = "Ask about TAGRISSO, LYNPARZA, FARXIGA, IMFINZI or CALQUENCE";
@@ -120,8 +120,10 @@ function showCode(visible) {
 }
 showCode(false);
 $("showcode").onclick = () => showCode($("code").type === "password");
-// Earlier turns of this conversation, oldest first. The server uses the last three to read a
-// follow-up ("Which of those are serious?"); they are never used as evidence.
+// Every turn of this conversation, oldest first, with its full answer. The answers stay in this
+// page, so an earlier one reopens without asking the server again; a reload starts over. The
+// server only gets the last three questions and short answers, to read a follow-up ("Which of
+// those are serious?"); they are never used as evidence.
 let convo = [];
 
 // The page talks to the server it was loaded from, so it does nothing useful when opened as a file.
@@ -138,12 +140,13 @@ async function ask() {
   $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
   try {
     const headers = { "content-type": "application/json", "x-access-code": $("code").value.trim() };
-    const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question, history: convo.slice(-3) }) });
+    const history = convo.slice(-3).map((t) => ({ question: t.asked, answer: t.answer }));
+    const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question, history }) });
     const body = await r.json();
     if (r.status === 401) { $("codebox").hidden = false; $("code").focus(); }
     if (!r.ok) { $("out").innerHTML = `<section><p class="error">${r.status === 429 ? "" : `HTTP ${r.status}: `}${esc(body.detail)}</p></section>`; return; }
-    render(body);
-    convo.push({ question: body.asked_as || body.question, answer: String(body.answer || "").slice(0, 1500) });
+    convo.push({ question: body.question, asked: body.asked_as || body.question, answer: String(body.answer || "").slice(0, 1500), full: body });
+    show(convo.length - 1);
     $("q").value = "";
     $("q").placeholder = "Ask a follow-up, or a new question";
   } catch (err) {
@@ -153,7 +156,18 @@ async function ask() {
   }
 }
 
-function render(a) {
+function show(i) {
+  const turns = convo.map((t, j) => j === i
+    ? `<li><strong>${esc(t.question)}</strong> <span class="meta">shown below</span></li>`
+    : `<li><button type="button" class="link" data-turn="${j}">${esc(t.question)}</button></li>`).join("");
+  const list = convo.length > 1 ? `<section><h2>This conversation</h2><ol>${turns}</ol>
+      <button type="button" class="link" id="newchat">Start a new conversation</button></section>` : "";
+  $("out").innerHTML = list + answerHtml(convo[i].full);
+  for (const b of $("out").querySelectorAll("button[data-turn]")) b.onclick = () => show(Number(b.dataset.turn));
+  if ($("newchat")) $("newchat").onclick = () => { convo = []; $("out").innerHTML = ""; $("q").placeholder = FIRST_PROMPT; $("q").focus(); };
+}
+
+function answerHtml(a) {
   const num = Object.fromEntries(a.citations.map((c, i) => [c.chunk_id, i + 1]));
   const answer = a.abstained
     ? `<p class="answer abstain">Abstained: ${esc(a.abstain_reason)}</p>`
@@ -171,17 +185,13 @@ function render(a) {
       ${t.arguments.reason ? `<div class="why">why: ${esc(t.arguments.reason)}</div>` : ""}
       <div class="meta">→ ${esc(t.summary)}</div>${t.flags.length ? `<div class="bad">flags: ${esc(t.flags.join(", "))}</div>` : ""}</li>`;
   }).join("");
-  const earlier = convo.length ? `<section><h2>Earlier in this conversation</h2><ol>${convo.map((t) => `<li class="meta">${esc(t.question)}</li>`).join("")}</ol>
-      <button type="button" class="link" id="newchat">Start a new conversation</button></section>` : "";
   const readAs = a.asked_as ? `<p class="meta readas">Read as: ${esc(a.asked_as)}</p>` : "";
-  $("out").innerHTML = `
-    ${earlier}
+  return `
     <section><h2>Answer</h2>${readAs}<div class="answer">${answer}</div></section>
     ${a.citations.length ? `<section><h2>Sources</h2><ol>${sources}</ol></section>` : ""}
     <section><h2>Checks</h2>${checks}</section>
     <section><h2>Agent trace · ${esc(a.provider)} · ${a.latency_ms.toFixed(0)} ms</h2><ol>${trace}</ol></section>
     <p class="meta">${esc(a.disclaimer)}</p>`;
-  if ($("newchat")) $("newchat").onclick = () => { convo = []; $("out").innerHTML = ""; $("q").placeholder = FIRST_PROMPT; $("q").focus(); };
 }
 </script>
 </body>
