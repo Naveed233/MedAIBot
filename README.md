@@ -27,7 +27,7 @@ question ──> query normalisation ──> agent loop (max 6 steps) ───�
 
 ## Results
 
-From `eval/results/` run `20261029T103509Z`, 18 questions with gold chunks (full report: [docs/failure-report.md](docs/failure-report.md)).
+From `eval/results/` run `20261029T103836Z`, 18 questions with gold chunks (full report: [docs/failure-report.md](docs/failure-report.md)).
 
 | retrieval config | hit@5 | MRR | hit@5 English | hit@5 Japanese |
 |---|---|---|---|---|
