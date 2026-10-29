@@ -1,4 +1,4 @@
-"""Command line entry point: `medaibot fetch | ingest | search | ask | eval | serve`."""
+"""Command line entry point: `medaibot fetch | ingest | search | ask | eval | eval-followups | serve`."""
 
 import argparse
 import logging
@@ -93,6 +93,12 @@ def cmd_eval(settings: Settings, args: argparse.Namespace) -> int:
     return run_evaluation(settings, retrieval_only=args.retrieval_only, limit=args.limit)
 
 
+def cmd_eval_followups(settings: Settings, args: argparse.Namespace) -> int:
+    from medaibot.followup_eval import run_follow_up_evaluation
+
+    return run_follow_up_evaluation(settings)
+
+
 def cmd_serve(settings: Settings, args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -126,6 +132,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--retrieval-only", action="store_true")
     p.add_argument("--limit", type=int, default=None)
     p.set_defaults(func=cmd_eval)
+
+    p = sub.add_parser("eval-followups", help="score how follow-up questions are classified and rewritten")
+    p.set_defaults(func=cmd_eval_followups)
 
     p = sub.add_parser("serve", help="run the HTTP API")
     p.add_argument("--host", default="127.0.0.1")

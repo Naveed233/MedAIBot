@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from medaibot import __version__
 from medaibot.config import Settings, get_settings
-from medaibot.followup import MAX_TURNS, Turn, resolve_follow_up
+from medaibot.followup import MAX_TURNS, Turn, clarifying_answer, resolve_follow_up, with_follow_up
 from medaibot.logging_setup import configure_logging, log_event
 from medaibot.models import AgentAnswer
 from medaibot.runtime import Runtime, load_runtime
@@ -151,17 +151,20 @@ def create_app(settings: Settings | None = None, runtime: Runtime | None = None)
         if reason := limits.question():
             raise HTTPException(status_code=429, detail=reason)
         rt = _runtime(request)
+        started = time.perf_counter()
         try:
             agent = rt.agent
             rewriter = agent.provider if settings.llm_provider == "openai" else None
             resolved = resolve_follow_up(body.question, body.history, rt.catalog, rewriter)
+            if resolved.clarify:
+                return clarifying_answer(body.question, resolved, agent.provider.name, started)
             answer = agent.run(resolved.question)
         except ValueError as exc:  # configuration problems, e.g. no model name
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         if any(s.kind == "error" and s.summary.startswith("model call failed") for s in answer.trace):
             raise HTTPException(status_code=503, detail=answer.abstain_reason)
-        if resolved.rewritten:
-            answer = answer.model_copy(update={"question": body.question, "asked_as": resolved.question})
+        if resolved.rewritten or resolved.kind:
+            answer = with_follow_up(answer, body.question, resolved, started)
         return answer
 
     @app.get("/", include_in_schema=False)

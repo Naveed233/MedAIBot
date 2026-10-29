@@ -85,6 +85,7 @@ const EXAMPLES = [
 ];
 const $ = (id) => document.getElementById(id);
 const FIRST_PROMPT = "Ask about TAGRISSO, LYNPARZA, FARXIGA, IMFINZI or CALQUENCE";
+const FOLLOW_UP_KINDS = { continuation: "follow-up", new_topic: "new topic, same drug", redo: "your last question again", drug_reply: "your drug choice" };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 for (const e of EXAMPLES) {
@@ -132,15 +133,16 @@ const notServed = `<section><p class="error">This page needs the MedAIBot server
 if (!served) $("out").innerHTML = notServed;
 else fetch("/ready").then((r) => r.json()).then((ready) => { if (ready.access_code_required) $("codebox").hidden = false; }).catch(() => {});
 
-async function ask() {
-  const question = $("q").value.trim();
+// `fresh` re-asks a question on its own, without the conversation.
+async function ask(text = null, fresh = false) {
+  const question = (text ?? $("q").value).trim();
   if (!question) return;
   if (!served) { $("out").innerHTML = notServed; return; }
   $("go").disabled = true;
   $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
   try {
     const headers = { "content-type": "application/json", "x-access-code": $("code").value.trim() };
-    const history = convo.slice(-3).map((t) => ({ question: t.asked, answer: t.answer }));
+    const history = fresh ? [] : convo.slice(-3).map((t) => ({ question: t.asked, answer: t.answer }));
     const r = await fetch("/ask", { method: "POST", headers, body: JSON.stringify({ question, history }) });
     const body = await r.json();
     if (r.status === 401) { $("codebox").hidden = false; $("code").focus(); }
@@ -164,6 +166,8 @@ function show(i) {
       <button type="button" class="link" id="newchat">Start a new conversation</button></section>` : "";
   $("out").innerHTML = list + answerHtml(convo[i].full);
   for (const b of $("out").querySelectorAll("button[data-turn]")) b.onclick = () => show(Number(b.dataset.turn));
+  const fresh = $("out").querySelector("button[data-fresh]");
+  if (fresh) fresh.onclick = () => ask(convo[i].question, true);
   if ($("newchat")) $("newchat").onclick = () => { convo = []; $("out").innerHTML = ""; $("q").placeholder = FIRST_PROMPT; $("q").focus(); };
 }
 
@@ -185,7 +189,14 @@ function answerHtml(a) {
       ${t.arguments.reason ? `<div class="why">why: ${esc(t.arguments.reason)}</div>` : ""}
       <div class="meta">→ ${esc(t.summary)}</div>${t.flags.length ? `<div class="bad">flags: ${esc(t.flags.join(", "))}</div>` : ""}</li>`;
   }).join("");
-  const readAs = a.asked_as ? `<p class="meta readas">Read as: ${esc(a.asked_as)}</p>` : "";
+  if (a.clarify) {
+    return `<section><h2>Which do you mean?</h2><p class="answer">${esc(a.clarify)}</p>
+        <p class="meta">Nothing was searched yet. Reply in the box above.</p></section>
+      <section><h2>Agent trace · ${esc(a.provider)} · ${a.latency_ms.toFixed(0)} ms</h2><ol>${trace}</ol></section>`;
+  }
+  const kind = FOLLOW_UP_KINDS[a.follow_up_kind];
+  const readAs = a.asked_as ? `<p class="meta readas">Read as${kind ? ` (${kind})` : ""}: ${esc(a.asked_as)}
+      · <button type="button" class="link" data-fresh>Not what you meant? Ask it as a new question</button></p>` : "";
   return `
     <section><h2>Answer</h2>${readAs}<div class="answer">${answer}</div></section>
     ${a.citations.length ? `<section><h2>Sources</h2><ol>${sources}</ol></section>` : ""}

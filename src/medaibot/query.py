@@ -39,6 +39,11 @@ SECTION_HINTS: dict[str, tuple[str, ...]] = {
         "pediatric",
         "children",
         "elderly",
+        "geriatric",
+        "older adult",
+        "older patient",
+        " age",  # the leading space keeps "dosage" and "usage" out
+        "年齢",
         "renal",
         "kidney",
         "hepatic",

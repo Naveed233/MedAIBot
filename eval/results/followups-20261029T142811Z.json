@@ -1,0 +1,542 @@
+{
+ "run_id": "followups-20261029T142811Z",
+ "started_at": "2026-10-29T14:28:11+00:00",
+ "provider": "openai:gpt-5.4-mini",
+ "cases": [
+  {
+   "id": "f01",
+   "turns": [
+    {
+     "question": "What are the most common adverse reactions with TAGRISSO monotherapy?",
+     "answer": "The most common adverse reactions were diarrhea (47%), rash (46%), musculoskeletal pain (38%), nail toxicity (34%) and dry skin (32%)."
+    }
+   ],
+   "message": "Which of those are the most serious?",
+   "kinds": [
+    "continuation"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [
+    "serious"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f02",
+   "turns": [
+    {
+     "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+     "answer": "1,500 mg every 3 weeks with tremelimumab-actl and platinum-based chemotherapy for 4 cycles, then 1,500 mg every 4 weeks."
+    }
+   ],
+   "message": "And for patients under 30 kg?",
+   "kinds": [
+    "continuation"
+   ],
+   "drug": "imfinzi",
+   "any_terms": [
+    "30 kg"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f03",
+   "turns": [
+    {
+     "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+     "answer": "1,500 mg every 3 weeks with tremelimumab-actl and platinum-based chemotherapy for 4 cycles, then 1,500 mg every 4 weeks."
+    }
+   ],
+   "message": "anything related to age?",
+   "kinds": [
+    "new_topic"
+   ],
+   "drug": "imfinzi",
+   "any_terms": [
+    "age",
+    "older",
+    "geriatric",
+    "pediatric",
+    "elderly"
+   ],
+   "no_terms": [
+    "30 kg"
+   ],
+   "japanese": false
+  },
+  {
+   "id": "f04",
+   "turns": [
+    {
+     "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+     "answer": "1,500 mg every 3 weeks with tremelimumab-actl and platinum-based chemotherapy for 4 cycles, then 1,500 mg every 4 weeks."
+    }
+   ],
+   "message": "give me the last response in japanese",
+   "kinds": [
+    "redo"
+   ],
+   "drug": "imfinzi",
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": true
+  },
+  {
+   "id": "f05",
+   "turns": [
+    {
+     "question": "What are the most common adverse reactions with TAGRISSO monotherapy?",
+     "answer": "The most common adverse reactions were diarrhea (47%), rash (46%) and musculoskeletal pain (38%)."
+    }
+   ],
+   "message": "Explain that more simply",
+   "kinds": [
+    "redo"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f06",
+   "turns": [
+    {
+     "question": "What is the recommended starting dose?",
+     "answer": "I can't answer this from the indexed labels: the drug is not specified, so which drug do you mean?"
+    }
+   ],
+   "message": "TAGRISSO",
+   "kinds": [
+    "drug_reply",
+    "continuation"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [
+    "dose"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f07",
+   "turns": [
+    {
+     "question": "Does TAGRISSO interact with grapefruit juice?",
+     "answer": "I can't answer this from the indexed labels: the TAGRISSO label does not mention grapefruit juice."
+    }
+   ],
+   "message": "How about orange juice?",
+   "kinds": [
+    "continuation",
+    "new_topic"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [
+    "orange"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f08",
+   "turns": [
+    {
+     "question": "What is the recommended dose of LYNPARZA?",
+     "answer": "300 mg taken orally twice daily."
+    }
+   ],
+   "message": "What about FARXIGA?",
+   "kinds": [
+    "continuation"
+   ],
+   "drug": "farxiga",
+   "any_terms": [
+    "dose",
+    "dosage"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f09",
+   "turns": [
+    {
+     "question": "What is the recommended dose of TAGRISSO?",
+     "answer": "80 mg orally once daily."
+    },
+    {
+     "question": "What is the recommended dose of LYNPARZA?",
+     "answer": "300 mg taken orally twice daily."
+    }
+   ],
+   "message": "What about side effects?",
+   "kinds": [
+    "unclear"
+   ],
+   "drug": null,
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f10",
+   "turns": [
+    {
+     "question": "What is FARXIGA indicated for?",
+     "answer": "FARXIGA is indicated for type 2 diabetes, heart failure and chronic kidney disease in adults."
+    }
+   ],
+   "message": "Is it safe in pregnancy?",
+   "kinds": [
+    "new_topic",
+    "continuation"
+   ],
+   "drug": "farxiga",
+   "any_terms": [
+    "pregnan"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f11",
+   "turns": [
+    {
+     "question": "How should CALQUENCE capsules be stored?",
+     "answer": "Store at room temperature."
+    }
+   ],
+   "message": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+   "kinds": [
+    "new"
+   ],
+   "drug": "imfinzi",
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f12",
+   "turns": [
+    {
+     "question": "タグリッソの用量は？",
+     "answer": "TAGRISSOの推奨用量は80 mgを1日1回です。"
+    }
+   ],
+   "message": "副作用は？",
+   "kinds": [
+    "new_topic",
+    "continuation"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": true
+  },
+  {
+   "id": "f13",
+   "turns": [
+    {
+     "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+     "answer": "1,500 mg every 3 weeks with tremelimumab-actl and platinum-based chemotherapy for 4 cycles."
+    }
+   ],
+   "message": "How is it given?",
+   "kinds": [
+    "new_topic"
+   ],
+   "drug": "imfinzi",
+   "any_terms": [
+    "administ",
+    "infusion",
+    "given"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f14",
+   "turns": [
+    {
+     "question": "What are the contraindications for TAGRISSO?",
+     "answer": "TAGRISSO has no contraindications; the label says None."
+    }
+   ],
+   "message": "and warnings?",
+   "kinds": [
+    "new_topic",
+    "continuation"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [
+    "warning"
+   ],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f15",
+   "turns": [
+    {
+     "question": "Hello",
+     "answer": "I answer questions about five US drug labels."
+    }
+   ],
+   "message": "Which of those are serious?",
+   "kinds": [
+    "unclear",
+    "new"
+   ],
+   "drug": null,
+   "any_terms": [],
+   "no_terms": [],
+   "japanese": false
+  },
+  {
+   "id": "f16",
+   "turns": [
+    {
+     "question": "What is the recommended dose of TAGRISSO?",
+     "answer": "80 mg orally once daily."
+    },
+    {
+     "question": "What is the recommended dose of LYNPARZA?",
+     "answer": "300 mg taken orally twice daily."
+    },
+    {
+     "question": "What about side effects?",
+     "answer": "Do you mean the side effects of TAGRISSO or of LYNPARZA?"
+    }
+   ],
+   "message": "the TAGRISSO one",
+   "kinds": [
+    "drug_reply",
+    "continuation"
+   ],
+   "drug": "tagrisso",
+   "any_terms": [
+    "side effect",
+    "adverse"
+   ],
+   "no_terms": [
+    "dose"
+   ],
+   "japanese": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "f01",
+   "message": "Which of those are the most serious?",
+   "kind": "continuation",
+   "question": "Which of the most common adverse reactions with TAGRISSO monotherapy are the most serious?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 1263.0
+  },
+  {
+   "id": "f02",
+   "message": "And for patients under 30 kg?",
+   "kind": "continuation",
+   "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing under 30 kg?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 985.7
+  },
+  {
+   "id": "f03",
+   "message": "anything related to age?",
+   "kind": "new_topic",
+   "question": "What does the IMFINZI label say about geriatric patients?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 980.2
+  },
+  {
+   "id": "f04",
+   "message": "give me the last response in japanese",
+   "kind": "redo",
+   "question": "IMFINZIの転移性NSCLCで体重30 kg以上の患者さんに対する用量はどのくらいですか？",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 1000.4
+  },
+  {
+   "id": "f05",
+   "message": "Explain that more simply",
+   "kind": "redo",
+   "question": "What are the most common adverse reactions with TAGRISSO monotherapy?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 1272.5
+  },
+  {
+   "id": "f06",
+   "message": "TAGRISSO",
+   "kind": "drug_reply",
+   "question": "What is the recommended starting dose of TAGRISSO?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 867.5
+  },
+  {
+   "id": "f07",
+   "message": "How about orange juice?",
+   "kind": "new_topic",
+   "question": "What does the TAGRISSO label say about orange juice?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 679.5
+  },
+  {
+   "id": "f08",
+   "message": "What about FARXIGA?",
+   "kind": "new_topic",
+   "question": "What does the FARXIGA label say about the recommended dose?",
+   "clarify": null,
+   "kind_ok": false,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": false,
+   "ms": 927.2
+  },
+  {
+   "id": "f09",
+   "message": "What about side effects?",
+   "kind": "unclear",
+   "question": "What about side effects?",
+   "clarify": "Do you mean the side effects of TAGRISSO or of LYNPARZA?",
+   "kind_ok": true,
+   "drug_ok": null,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 1329.2
+  },
+  {
+   "id": "f10",
+   "message": "Is it safe in pregnancy?",
+   "kind": "new_topic",
+   "question": "What does the FARXIGA label say about use in pregnancy?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 876.7
+  },
+  {
+   "id": "f11",
+   "message": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+   "kind": "new",
+   "question": "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 0.1
+  },
+  {
+   "id": "f12",
+   "message": "副作用は？",
+   "kind": "continuation",
+   "question": "TAGRISSOの副作用は？",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 956.8
+  },
+  {
+   "id": "f13",
+   "message": "How is it given?",
+   "kind": "new_topic",
+   "question": "What does the IMFINZI label say about how it is given?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 888.5
+  },
+  {
+   "id": "f14",
+   "message": "and warnings?",
+   "kind": "continuation",
+   "question": "What are the warnings for TAGRISSO?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 2011.8
+  },
+  {
+   "id": "f15",
+   "message": "Which of those are serious?",
+   "kind": "unclear",
+   "question": "Which of those are serious?",
+   "clarify": "Do you mean the serious side effects of one of the five drug labels, and if so which drug?",
+   "kind_ok": true,
+   "drug_ok": null,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 768.8
+  },
+  {
+   "id": "f16",
+   "message": "the TAGRISSO one",
+   "kind": "drug_reply",
+   "question": "What are the side effects of TAGRISSO?",
+   "clarify": null,
+   "kind_ok": true,
+   "drug_ok": true,
+   "question_ok": true,
+   "all_ok": true,
+   "ms": 816.0
+  }
+ ],
+ "summary": {
+  "kind_ok": {
+   "n": 16,
+   "rate": 0.938
+  },
+  "drug_ok": {
+   "n": 14,
+   "rate": 1.0
+  },
+  "question_ok": {
+   "n": 16,
+   "rate": 1.0
+  },
+  "all_ok": {
+   "n": 16,
+   "rate": 0.938
+  }
+ }
+}

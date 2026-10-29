@@ -62,3 +62,9 @@ def test_catalog_matches_aliases_and_respects_word_boundaries(catalog):
 def test_a_latin_drug_name_inside_a_japanese_sentence_is_found(catalog):
     assert [d.key for d in catalog.find_in_text("TAGRISSOの副作用は？")] == ["tagrisso"]
     assert normalise_query("LYNPARZAの用量は？", catalog).drug == "lynparza"
+
+
+def test_age_questions_point_to_specific_populations_but_dosage_does_not():
+    assert guess_section("anything related to age?") == "use_in_specific_populations"
+    assert guess_section("Is it safe for older patients?") == "use_in_specific_populations"
+    assert guess_section("What is the recommended dosage?") == "dosage_and_administration"

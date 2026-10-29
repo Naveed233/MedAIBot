@@ -1,8 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from medaibot import api as api_module
 from medaibot.api import UsageLimits, create_app
 from medaibot.config import Settings
+from medaibot.followup import Resolved
 from medaibot.llm.base import LLMError
 from medaibot.runtime import Runtime
 
@@ -126,6 +128,7 @@ def test_a_follow_up_is_answered_about_the_earlier_drug(client):
     assert body["question"] == question
     assert body["asked_as"] == f"About TAGRISSO: {question}"
     assert all(c["drug"] == "TAGRISSO" for c in body["citations"])
+    assert body["trace"][0]["kind"] == "follow_up" and "read as" in body["trace"][0]["summary"]
 
 
 def test_a_question_without_history_is_not_rewritten(client):
@@ -136,3 +139,17 @@ def test_a_question_without_history_is_not_rewritten(client):
 def test_history_is_capped_at_three_turns(client):
     turn = {"question": "What is the dose of TAGRISSO?", "answer": ""}
     assert client.post("/ask", json={"question": "And for children?", "history": [turn] * 4}).status_code == 422
+
+
+def test_an_unclear_follow_up_gets_a_clarifying_question_and_no_search(client, monkeypatch):
+    clarify = "Do you mean the side effects of TAGRISSO or of FARXIGA?"
+    monkeypatch.setattr(
+        api_module,
+        "resolve_follow_up",
+        lambda question, history, catalog, rewriter: Resolved(question, "model", "unclear", clarify),
+    )
+    history = [{"question": "What is the TAGRISSO dose?"}, {"question": "What is FARXIGA used for?"}]
+    body = client.post("/ask", json={"question": "What about side effects?", "history": history}).json()
+    assert body["clarify"] == clarify and body["follow_up_kind"] == "unclear"
+    assert body["abstained"] and body["citations"] == []
+    assert [t["kind"] for t in body["trace"]] == ["follow_up"]

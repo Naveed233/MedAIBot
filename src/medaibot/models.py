@@ -85,7 +85,7 @@ class GroundingReport(BaseModel):
 
 class TraceStep(BaseModel):
     step: int
-    kind: Literal["tool_call", "final_answer", "validation", "error", "limit"]
+    kind: Literal["follow_up", "tool_call", "final_answer", "validation", "error", "limit"]
     name: str | None = None
     arguments: dict[str, Any] = Field(default_factory=dict)
     summary: str
@@ -97,6 +97,10 @@ class AgentAnswer(BaseModel):
     question: str
     # The standalone question the agent answered, when a follow-up was rewritten.
     asked_as: str | None = None
+    # How the message related to the conversation (continuation, new_topic, redo, ...), when classified.
+    follow_up_kind: str | None = None
+    # A question back to the user when a follow-up was unclear; no search ran.
+    clarify: str | None = None
     answer: str
     sentences: list[AnswerSentence]
     citations: list[Citation]
