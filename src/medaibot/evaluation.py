@@ -210,7 +210,7 @@ def write_report(result: dict[str, Any], path: Path = REPORT_PATH, baseline: dic
             f"embedder `{result['corpus']['embedder']}`."
         ),
         (
-            f"- Questions: {result['n_questions']} written by hand; gold chunks labelled by "
+            f"- Questions: {result['n_questions']} written from reading the labels; gold chunks labelled by "
             "reading the chunks, not clinically reviewed."
         ),
         "- 22 questions are enough to spot failure modes, not to claim reliability.",

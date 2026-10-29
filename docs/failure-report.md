@@ -3,7 +3,7 @@
 Generated from run `20261029T120957Z` (2026-10-29T12:09:57+00:00). Every number below comes from that run's JSON in `eval/results/`.
 
 - Corpus: 1220 chunks from 5 openFDA labels; embedder `BAAI/bge-small-en-v1.5`.
-- Questions: 22 written by hand; gold chunks labelled by reading the chunks, not clinically reviewed.
+- Questions: 22 written from reading the labels; gold chunks labelled by reading the chunks, not clinically reviewed.
 - 22 questions are enough to spot failure modes, not to claim reliability.
 
 ## Retrieval (k=5)
