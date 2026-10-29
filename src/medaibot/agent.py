@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from medaibot.config import Settings
 from medaibot.drugs import DrugCatalog
-from medaibot.grounding import SupportJudge, judge_rejects, validate
+from medaibot.grounding import SupportJudge, judge_rejects, strip_chunk_ids, validate
 from medaibot.index import HybridIndex
 from medaibot.llm.base import LLMError, LLMProvider, Message, ToolCall, ToolDef
 from medaibot.logging_setup import log_event
@@ -186,7 +186,10 @@ class Agent:
                 )
                 return finish([], final.abstain_reason or "the model chose not to answer", last_report)
 
-            sentences = [AnswerSentence(text=s.text, citations=s.citations) for s in final.sentences]
+            sentences = [
+                AnswerSentence(text=strip_chunk_ids(s.text, set(s.citations) | evidence.keys()), citations=s.citations)
+                for s in final.sentences
+            ]
             report = validate(sentences, evidence, self.min_support)
             if self.judge is not None and report.passed:
                 report = self.judge.judge(report, evidence)

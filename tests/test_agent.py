@@ -98,6 +98,20 @@ def test_partial_judge_verdict_triggers_the_retry(index, catalog):
     assert feedback.role == "tool" and "partial" in feedback.content
 
 
+def test_chunk_ids_written_in_the_answer_text_are_removed(index, catalog):
+    provider = ScriptedProvider(
+        [
+            _search(),
+            _final(
+                "TAGRISSO contraindications: None [tagrisso:contraindications:000].", ["tagrisso:contraindications:000"]
+            ),
+        ]
+    )
+    answer = Agent(provider, Toolbox(index, catalog)).run("contraindications?")
+    assert not answer.abstained
+    assert answer.sentences[0].text == "TAGRISSO contraindications: None."
+
+
 def test_step_limit_stops_the_loop(index, catalog):
     provider = ScriptedProvider([_search()] * 10)
     answer = Agent(provider, Toolbox(index, catalog), max_steps=3).run("dose?")

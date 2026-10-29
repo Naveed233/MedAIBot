@@ -9,7 +9,7 @@ population and conditions. It is a heuristic and is reported as such.
 import json
 import logging
 import re
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from medaibot.llm.base import LLMError, LLMProvider, Message, ToolDef
 from medaibot.models import AnswerSentence, Chunk, GroundingReport, JudgeLabel, SentenceCheck
@@ -34,13 +34,23 @@ def injection_flags(text: str) -> list[str]:
     return [p.pattern for p in _INJECTION_PATTERNS if p.search(text)]
 
 
+_EMPTY_BRACKETS_RE = re.compile(r"[\[(（【]\s*[,;、\s]*[\])）】]")
+
+
+def strip_chunk_ids(text: str, chunk_ids: Iterable[str]) -> str:
+    """Models sometimes repeat chunk ids inside the sentence. They belong in citations,
+    and "...:000" must not be read as a number."""
+    for chunk_id in sorted(set(chunk_ids), key=len, reverse=True):
+        text = text.replace(chunk_id, " ")
+    text = _EMPTY_BRACKETS_RE.sub(" ", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    return re.sub(r"\s+([.,;:。、])", r"\1", text).strip()
+
+
 def check_sentence(sentence: AnswerSentence, evidence: dict[str, Chunk], min_support: float) -> SentenceCheck:
     unknown = [c for c in sentence.citations if c not in evidence]
     cited_text = " ".join(evidence[c].index_text for c in sentence.citations if c in evidence)
-    # Models sometimes repeat chunk ids inside the sentence; "...:000" is not a dose.
-    text = sentence.text
-    for chunk_id in sorted(set(sentence.citations) | evidence.keys(), key=len, reverse=True):
-        text = text.replace(chunk_id, " ")
+    text = strip_chunk_ids(sentence.text, set(sentence.citations) | evidence.keys())
     unsupported_numbers = sorted(numbers_in(text) - numbers_in(cited_text, words=True))
 
     if is_cjk(text):
