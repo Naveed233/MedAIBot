@@ -95,7 +95,28 @@ def split_sentences(text: str) -> list[str]:
 
 
 _NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
+_NUMBER_WORDS = {
+    "once": "1",
+    "one": "1",
+    "twice": "2",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+    "ten": "10",
+}
+_NUMBER_WORD_RE = re.compile(r"\b(" + "|".join(_NUMBER_WORDS) + r")\b")
 
 
-def numbers_in(text: str) -> set[str]:
-    return set(_NUMBER_RE.findall(normalize(text)))
+def numbers_in(text: str, words: bool = False) -> set[str]:
+    """Digits in the text. With words=True, English number words count too ("once daily" gives 1),
+    so a Japanese answer saying 1日1回 can be checked against a label that says "once daily"."""
+    norm = normalize(text)
+    found = set(_NUMBER_RE.findall(norm))
+    if words:
+        found |= {_NUMBER_WORDS[w] for w in _NUMBER_WORD_RE.findall(norm)}
+    return found

@@ -30,6 +30,17 @@ def test_number_missing_from_cited_text_fails(chunks):
     assert report.sentences[0].unsupported_numbers == ["160"]
 
 
+def test_chunk_ids_in_sentence_text_are_not_read_as_numbers(chunks):
+    ev = _evidence(chunks)
+    s = AnswerSentence(
+        text="TAGRISSO has no contraindications: None (tagrisso:contraindications:000).",
+        citations=["tagrisso:contraindications:000"],
+    )
+    report = validate([s], ev)
+    assert report.sentences[0].unsupported_numbers == []
+    assert report.passed, report.problems
+
+
 def test_uncited_sentence_fails(chunks):
     report = validate([AnswerSentence(text="It is safe.", citations=[])], _evidence(chunks))
     assert not report.passed and "no citation" in report.problems[0]
@@ -41,6 +52,14 @@ def test_japanese_sentence_skips_token_overlap_but_keeps_number_check(chunks):
     assert ok.passed
     bad = validate([AnswerSentence(text="用量は999mgです。", citations=["tagrisso:contraindications:000"])], ev)
     assert not bad.passed and bad.sentences[0].unsupported_numbers == ["999"]
+
+
+def test_japanese_frequency_matches_english_number_words(chunks):
+    ev = _evidence(chunks)
+    dose = next(c for c in ev.values() if "80 mg tablet orally once daily" in c.text and " 1 " not in c.text)
+    s = AnswerSentence(text="推奨用量は80 mgを1日1回経口投与です。", citations=[dose.chunk_id])
+    report = validate([s], ev)
+    assert report.sentences[0].unsupported_numbers == []
 
 
 def test_injection_flags():

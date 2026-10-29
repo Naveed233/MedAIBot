@@ -1,6 +1,7 @@
 from itertools import count
 
 from medaibot.agent import SYSTEM_PROMPT, Agent
+from medaibot.grounding import JUDGE_TOOL, SupportJudge
 from medaibot.index import BM25
 from medaibot.llm.base import LLMError, LLMResponse, ToolCall
 from medaibot.llm.offline import OfflineProvider
@@ -71,6 +72,30 @@ def test_two_failed_answers_end_in_abstention(index, catalog):
     answer = Agent(provider, Toolbox(index, catalog)).run("dose?")
     assert answer.abstained and "grounding checks twice" in answer.abstain_reason
     assert answer.grounding is not None and not answer.grounding.passed
+
+
+class SequenceJudge:
+    """Judge provider that returns one label per call for sentence 1."""
+
+    name = "judge"
+
+    def __init__(self, labels):
+        self.labels = list(labels)
+
+    def complete(self, system, messages, tools, require_tool=True):
+        judgement = {"sentence": 1, "label": self.labels.pop(0), "reason": "drops the population"}
+        call = ToolCall("j", JUDGE_TOOL.name, {"judgements": [judgement]})
+        return LLMResponse(text="", tool_calls=[call], model="judge")
+
+
+def test_partial_judge_verdict_triggers_the_retry(index, catalog):
+    answer_step = _final("TAGRISSO contraindications: None.", ["tagrisso:contraindications:000"])
+    provider = ScriptedProvider([_search(), answer_step, answer_step])
+    judge = SupportJudge(SequenceJudge(["partial", "supported"]))
+    answer = Agent(provider, Toolbox(index, catalog), judge=judge).run("contraindications?")
+    assert not answer.abstained
+    feedback = provider.seen_messages[2][-1]
+    assert feedback.role == "tool" and "partial" in feedback.content
 
 
 def test_step_limit_stops_the_loop(index, catalog):

@@ -37,14 +37,18 @@ def injection_flags(text: str) -> list[str]:
 def check_sentence(sentence: AnswerSentence, evidence: dict[str, Chunk], min_support: float) -> SentenceCheck:
     unknown = [c for c in sentence.citations if c not in evidence]
     cited_text = " ".join(evidence[c].index_text for c in sentence.citations if c in evidence)
-    unsupported_numbers = sorted(numbers_in(sentence.text) - numbers_in(cited_text))
+    # Models sometimes repeat chunk ids inside the sentence; "...:000" is not a dose.
+    text = sentence.text
+    for chunk_id in sorted(set(sentence.citations) | evidence.keys(), key=len, reverse=True):
+        text = text.replace(chunk_id, " ")
+    unsupported_numbers = sorted(numbers_in(text) - numbers_in(cited_text, words=True))
 
-    if is_cjk(sentence.text):
+    if is_cjk(text):
         # A Japanese sentence about an English label shares no tokens with it, so token
         # overlap says nothing. Numbers and the judge still apply.
         support = 1.0
     else:
-        tokens = set(tokenize(sentence.text))
+        tokens = set(tokenize(text))
         cited_tokens = set(tokenize(cited_text))
         support = len(tokens & cited_tokens) / len(tokens) if tokens else 0.0
 
@@ -153,8 +157,9 @@ class SupportJudge:
         return report
 
 
-def judge_says_unsupported(report: GroundingReport) -> bool:
-    return any(s.judge_label == "unsupported" for s in report.sentences)
+def judge_rejects(report: GroundingReport) -> bool:
+    """A "partial" verdict usually means a dropped qualifier (population, condition); treat it as a failure."""
+    return any(s.judge_label in ("partial", "unsupported") for s in report.sentences)
 
 
 def dumps(data: object) -> str:

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from medaibot.config import Settings
 from medaibot.drugs import DrugCatalog
-from medaibot.grounding import SupportJudge, judge_says_unsupported, validate
+from medaibot.grounding import SupportJudge, judge_rejects, validate
 from medaibot.index import HybridIndex
 from medaibot.llm.base import LLMError, LLMProvider, Message, ToolCall, ToolDef
 from medaibot.logging_setup import log_event
@@ -27,7 +27,8 @@ How to work:
 asks whether the label is current, or names a drug that is not in the index.
 2. Read the evidence before answering. If it does not answer the question, search again with other words or read the section.
 3. Finish by calling final_answer. Every sentence must cite the chunk_id values it relies on, and only ids returned by \
-tools in this conversation. Copy numbers, doses and units exactly as written in the cited text.
+tools in this conversation. Put ids in citations, never in the sentence text. Copy numbers, doses and units exactly \
+as written in the cited text.
 4. Keep the population and conditions attached to each fact, for example "for metastatic NSCLC" or "in patients \
 weighing 30 kg or more".
 5. If the label states something explicitly, report it, even when it is "None". If the label does not cover the topic, \
@@ -190,7 +191,7 @@ class Agent:
             if self.judge is not None and report.passed:
                 report = self.judge.judge(report, evidence)
             last_report = report
-            ok = report.passed and not judge_says_unsupported(report)
+            ok = report.passed and not judge_rejects(report)
             trace.append(
                 TraceStep(
                     step=step,
