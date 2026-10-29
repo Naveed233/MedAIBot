@@ -1,0 +1,42 @@
+{
+  "source": "openFDA drug label API",
+  "source_url": "https://open.fda.gov/apis/drug/label/",
+  "note": "Labels are pinned by SPL set_id so a re-fetch returns the same document family. Japanese aliases are hand-written and should be checked against PMDA before relying on them.",
+  "drugs": [
+    {
+      "key": "tagrisso",
+      "brand": "TAGRISSO",
+      "generic": "osimertinib",
+      "set_id": "5e81b4a7-b971-45e1-9c31-29cea8c87ce7",
+      "aliases": ["osimertinib mesylate", "タグリッソ", "オシメルチニブ"]
+    },
+    {
+      "key": "lynparza",
+      "brand": "LYNPARZA",
+      "generic": "olaparib",
+      "set_id": "741ff3e3-dc1a-45a6-84e5-2481b27131aa",
+      "aliases": ["リムパーザ", "オラパリブ"]
+    },
+    {
+      "key": "farxiga",
+      "brand": "FARXIGA",
+      "generic": "dapagliflozin",
+      "set_id": "72ad22ae-efe6-4cd6-a302-98aaee423d69",
+      "aliases": ["forxiga", "フォシーガ", "ダパグリフロジン"]
+    },
+    {
+      "key": "imfinzi",
+      "brand": "IMFINZI",
+      "generic": "durvalumab",
+      "set_id": "8baba4ea-2855-42fa-9bd9-5a7548d4cec3",
+      "aliases": ["イミフィンジ", "デュルバルマブ"]
+    },
+    {
+      "key": "calquence",
+      "brand": "CALQUENCE",
+      "generic": "acalabrutinib",
+      "set_id": "dd4835ef-e1bc-4997-a399-1ffa2556fbfe",
+      "aliases": ["カルケンス", "アカラブルチニブ"]
+    }
+  ]
+}
