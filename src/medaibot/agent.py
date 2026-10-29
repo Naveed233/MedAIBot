@@ -216,7 +216,12 @@ class Agent:
                     Message(role="tool", tool_call_id=final_call.id, content=json.dumps(feedback, ensure_ascii=False))
                 )
                 continue
-            return finish([], "the answer failed the grounding checks twice", report)
+            return finish(
+                [],
+                "my draft answers failed the grounding checks twice, so I won't guess; "
+                "the checks show what the label did not support",
+                report,
+            )
 
         trace.append(TraceStep(step=self.max_steps, kind="limit", summary=f"stopped after {self.max_steps} steps"))
         return finish([], f"no grounded answer within {self.max_steps} steps", last_report)

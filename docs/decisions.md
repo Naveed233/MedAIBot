@@ -64,6 +64,8 @@ A follow-up is rewritten into a standalone question before the agent sees it (`f
 
 The first prompt allowed "return it unchanged if it stands on its own", and the model returned "Which of those are the most serious?" unchanged in 2 of 3 tries. Naming the reference words and giving one example fixed it in 12 of 12 tries across four follow-ups. Those live checks also found that a Latin drug name inside Japanese text ("TAGRISSOの副作用は？") was not detected, because `\b` treats Japanese characters as word characters; the name match now only requires no Latin letter or digit beside it.
 
+A second round of live tests found two more gaps: a continuation ("And for patients under 30 kg?") came back unchanged, and "give me the last response in Japanese" lost the question it referred to. The prompt now names both cases: a request to repeat, translate or simplify becomes the previous question in the language the user wants. Its examples use other drugs and questions than the demo ones, so the prompt is not tuned to the demo.
+
 ## AWS path
 
 Design only. Not deployed.
