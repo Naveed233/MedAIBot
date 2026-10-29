@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen --extra openai
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      # Offline: hashing embedder, rules provider, mocked openFDA. No API keys, no downloads.
+      - run: uv run pytest
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t medaibot:ci .
+      - name: Start the container and check health and readiness
+        run: |
+          docker run -d --name app -p 8000:8000 medaibot:ci
+          for i in $(seq 1 30); do curl -fsS localhost:8000/health && break; sleep 2; done
+          curl -fsS localhost:8000/ready
+          curl -fsS -X POST localhost:8000/ask -H 'content-type: application/json' \
+            -d '{"question": "What are the contraindications for TAGRISSO?"}' | python3 -c "import json,sys; a=json.load(sys.stdin); assert not a['abstained'], a; print(a['answer'])"
+      - if: always()
+        run: docker logs app || true

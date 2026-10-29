@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedAIBot</title>
+<style>
+  :root { --bg: #f7f7f5; --fg: #1d1d1b; --muted: #6b6b66; --card: #ffffff; --line: #e2e2dc; --accent: #2f5d8a; --ok: #2e7d4f; --warn: #a15c00; --bad: #b3261e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --fg: #ececea; --muted: #a3a39d; --card: #1f1f1e; --line: #33332f; --accent: #8db6e0; --ok: #7cc79b; --warn: #e0a54d; --bad: #f08a80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Hiragino Sans", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); font: inherit; }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--bg); font: inherit; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .examples { margin: 10px 0 20px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .examples button { background: transparent; color: var(--accent); border: 1px solid var(--line); padding: 4px 10px; font-size: 13px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 14px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  .answer { font-size: 16px; }
+  .abstain { color: var(--warn); }
+  sup a { color: var(--accent); text-decoration: none; margin-left: 2px; }
+  ol { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .partial { color: var(--warn); }
+  code { font-size: 12px; overflow-wrap: anywhere; }
+  .why { color: var(--muted); font-style: italic; }
+  .error { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>MedAIBot</h1>
+  <p class="sub">Cited answers from five US FDA drug labels, with the agent's tool trace and grounding checks. Demo project: not medical advice, not affiliated with AstraZeneca. US labels differ from Japanese PMDA labels.</p>
+  <form id="ask">
+    <input id="q" name="q" autocomplete="off" placeholder="Ask about TAGRISSO, LYNPARZA, FARXIGA, IMFINZI or CALQUENCE" required maxlength="1000">
+    <button id="go" type="submit">Ask</button>
+  </form>
+  <div class="examples" id="examples"></div>
+  <div id="out"></div>
+</main>
+<script>
+const EXAMPLES = [
+  "What are the contraindications for TAGRISSO?",
+  "タグリッソの用量は？",
+  "Does TAGRISSO interact with grapefruit juice?",
+  "What is the IMFINZI dose for metastatic NSCLC in patients weighing 30 kg or more?",
+  "Is the FARXIGA label in your index the latest version?",
+];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+for (const e of EXAMPLES) {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = e;
+  b.onclick = () => { $("q").value = e; ask(); };
+  $("examples").appendChild(b);
+}
+$("ask").onsubmit = (ev) => { ev.preventDefault(); ask(); };
+
+async function ask() {
+  const question = $("q").value.trim();
+  if (!question) return;
+  $("go").disabled = true;
+  $("out").innerHTML = `<section><p class="meta">Working...</p></section>`;
+  try {
+    const r = await fetch("/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question }) });
+    const body = await r.json();
+    if (!r.ok) { $("out").innerHTML = `<section><p class="error">HTTP ${r.status}: ${esc(body.detail)}</p></section>`; return; }
+    render(body);
+  } catch (err) {
+    $("out").innerHTML = `<section><p class="error">${esc(err)}</p></section>`;
+  } finally {
+    $("go").disabled = false;
+  }
+}
+
+function render(a) {
+  const num = Object.fromEntries(a.citations.map((c, i) => [c.chunk_id, i + 1]));
+  const answer = a.abstained
+    ? `<p class="answer abstain">Abstained: ${esc(a.abstain_reason)}</p>`
+    : a.sentences.map((s) => `<span>${esc(s.text)}${s.citations.filter((c) => num[c]).map((c) => `<sup><a href="#src-${num[c]}">[${num[c]}]</a></sup>`).join("")}</span>`).join(" ");
+  const sources = a.citations.map((c, i) => `<li id="src-${i + 1}"><strong>${esc(c.drug)}</strong> · ${esc(c.section_title)}${c.subsection ? " › " + esc(c.subsection) : ""}
+      <div class="meta">label v${esc(c.label_version)} (${esc(c.effective_time)}) · <code>${esc(c.chunk_id)}</code> · <a href="${esc(c.source_url)}" target="_blank" rel="noopener">DailyMed</a></div>
+      <div class="meta">${esc(c.quote)}…</div></li>`).join("");
+  const g = a.grounding;
+  const checks = g ? `<p>Deterministic checks: <strong class="${g.passed ? "ok" : "bad"}">${g.passed ? "passed" : "failed"}</strong> · mean token support ${g.mean_token_support.toFixed(2)}${g.judge_model ? ` · judge: ${esc(g.judge_model)} (heuristic)` : ""}</p>
+      <ol>${g.sentences.map((s) => `<li>support ${s.token_support.toFixed(2)}${s.unsupported_numbers.length ? ` · <span class="bad">numbers not in source: ${esc(s.unsupported_numbers.join(", "))}</span>` : ""}${s.judge_label !== "not_checked" ? ` · judge <span class="${s.judge_label === "supported" ? "ok" : s.judge_label === "partial" ? "partial" : "bad"}">${esc(s.judge_label)}</span>${s.judge_reason ? ` <span class="meta">${esc(s.judge_reason)}</span>` : ""}` : ""}</li>`).join("")}</ol>
+      ${g.problems.length ? `<p class="meta">${g.problems.map(esc).join("<br>")}</p>` : ""}` : `<p class="meta">No answer to check.</p>`;
+  const trace = a.trace.map((t) => {
+    const args = Object.entries(t.arguments).filter(([k]) => k !== "reason").map(([k, v]) => `${esc(k)}=${esc(JSON.stringify(v))}`).join(", ");
+    return `<li><strong>${esc(t.kind)}</strong>${t.name ? ` <code>${esc(t.name)}(${args})</code>` : ""} <span class="meta">${t.duration_ms ? t.duration_ms.toFixed(0) + " ms" : ""}</span>
+      ${t.arguments.reason ? `<div class="why">why: ${esc(t.arguments.reason)}</div>` : ""}
+      <div class="meta">→ ${esc(t.summary)}</div>${t.flags.length ? `<div class="bad">flags: ${esc(t.flags.join(", "))}</div>` : ""}</li>`;
+  }).join("");
+  $("out").innerHTML = `
+    <section><h2>Answer</h2><div class="answer">${answer}</div></section>
+    ${a.citations.length ? `<section><h2>Sources</h2><ol>${sources}</ol></section>` : ""}
+    <section><h2>Checks</h2>${checks}</section>
+    <section><h2>Agent trace · ${esc(a.provider)} · ${a.latency_ms.toFixed(0)} ms</h2><ol>${trace}</ol></section>
+    <p class="meta">${esc(a.disclaimer)}</p>`;
+}
+</script>
+</body>
+</html>
