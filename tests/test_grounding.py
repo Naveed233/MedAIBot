@@ -1,6 +1,6 @@
 from medaibot.grounding import SupportJudge, injection_flags, validate
 from medaibot.llm.base import LLMError, LLMResponse, ToolCall
-from medaibot.models import AnswerSentence
+from medaibot.models import AnswerSentence, Chunk
 
 
 def _evidence(chunks):
@@ -95,3 +95,24 @@ def test_judge_failure_does_not_crash_and_is_reported(chunks):
     judged = SupportJudge(_JudgeProvider(fail=True)).judge(report, ev)
     assert judged.sentences[0].judge_label == "not_checked"
     assert any("unavailable" in p for p in judged.problems)
+
+
+def test_an_ordinal_in_the_label_supports_a_digit_in_the_answer():
+    chunk = Chunk(
+        chunk_id="imfinzi:dosage_and_administration:001",
+        drug="imfinzi",
+        brand="IMFINZI",
+        generic="durvalumab",
+        section="dosage_and_administration",
+        section_title="Dosage and Administration",
+        subsection=None,
+        position=1,
+        text="Then give a fifth dose of tremelimumab-actl 75 mg with IMFINZI dose 6 at week 16.",
+        set_id="x",
+        label_version="34",
+        effective_time="20260831",
+        source_url="https://example.org",
+    )
+    s = AnswerSentence(text="16週目にトレメリムマブ75 mgの5回目を投与します。", citations=[chunk.chunk_id])
+    report = validate([s], {chunk.chunk_id: chunk})
+    assert report.sentences[0].unsupported_numbers == []

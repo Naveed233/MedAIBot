@@ -108,6 +108,17 @@ _NUMBER_WORDS = {
     "eight": "8",
     "nine": "9",
     "ten": "10",
+    # Ordinals: the label says "a fifth dose" where a Japanese answer writes 5回目.
+    "first": "1",
+    "second": "2",
+    "third": "3",
+    "fourth": "4",
+    "fifth": "5",
+    "sixth": "6",
+    "seventh": "7",
+    "eighth": "8",
+    "ninth": "9",
+    "tenth": "10",
 }
 _NUMBER_WORD_RE = re.compile(r"\b(" + "|".join(_NUMBER_WORDS) + r")\b")
 

@@ -30,7 +30,8 @@ asks whether the label is current, or names a drug that is not in the index.
 tools in this conversation. Put ids in citations, never in the sentence text. Copy numbers, doses and units exactly \
 as written in the cited text.
 4. Keep the population and conditions attached to each fact, for example "for metastatic NSCLC" or "in patients \
-weighing 30 kg or more".
+weighing 30 kg or more". When a regimen has phases (for example a combination phase, then maintenance), write one \
+sentence per phase and keep every phase the cited text gives.
 5. If the label states something explicitly, report it, even when it is "None". If the label does not cover the topic, \
 call final_answer with abstain=true and say it was not found. Never fill gaps from general knowledge.
 6. If no drug is named, or the drug is ambiguous, call final_answer with abstain=true and ask which drug.
