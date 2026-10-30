@@ -24,7 +24,7 @@ question ──> query normalisation ──> agent loop (max 6 steps) ───�
 - **Retrieval.** Own BM25 implementation for exact terms (drug names, doses), FAISS inner-product search over `BAAI/bge-small-en-v1.5` embeddings for meaning, and Reciprocal Rank Fusion so the two score scales never need to be compared. Filters by drug and section.
 - **Agent.** The model must call a tool on every step and must finish with a structured `final_answer`. Each tool call carries a `reason`, so the trace shows why the agent did what it did. Retrieved text only ever enters the conversation as tool results; instruction-like text in documents is flagged.
 - **Checks instead of a confidence score.** An earlier project of mine returned `random.uniform(0.75, 0.98)` as "confidence". This one reports what was actually checked, and abstains when the checks fail twice.
-- **Follow-up questions.** The page sends the last three turns with each question, so the server keeps no state. A follow-up such as "Which of those are the most serious?" is first rewritten into a standalone question by one model call. If that fails, the drug from the earlier turn is carried over, and a rewrite may not bring in a drug nobody named. The agent then answers the standalone question from fresh retrieval with the same checks; earlier answers are context, never evidence. Earlier answers stay in the page, so clicking an earlier question reopens its answer without a new request.
+- **Follow-up questions.** The page sends the last three turns with each question, so the server keeps no state. One model call first classifies the message (a new question, a continuation, a new topic about the same drug, a redo such as "say that in Japanese", a reply to "which drug?", or unclear) and writes the standalone question. A new topic keeps the drug but not the old question's dose or population, and an unclear message gets a question back instead of a search. A rewrite may not bring in a drug nobody named; if the call fails, the drug from the earlier turn is carried over. The agent then answers from fresh retrieval with the same checks, so earlier answers are context, never evidence. Earlier answers stay in the page and reopen with a click, without a new request.
 
 ## Results
 
@@ -52,6 +52,8 @@ What the runs showed:
 - In run `20261029T120957Z` the Japanese pregnancy answer for FARXIGA said 妊娠中には推奨されません ("not recommended during pregnancy"). The label says "not recommended during the second and third trimesters". The judge marked it `supported`; the keyword check caught it. The judge is the same model that wrote the answer.
 - Each number is from a single run, and model answers change between runs.
 
+Follow-ups are scored separately by `medaibot eval-followups`, on 16 multi-turn cases up to the standalone question (run `followups-20261029T142811Z`): right kind 0.94, right drug 1.00 (n=14), right question 1.00. The one miss, "What about FARXIGA?", got the right question with a different kind label. Several cases come from failures found in live testing, so the set checks for regressions; it doesn't show reliability.
+
 ## Run it
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
@@ -63,6 +65,7 @@ uv run medaibot ingest     # builds data/index, downloads the embedding model on
 uv run medaibot ask "What are the contraindications for TAGRISSO?"
 uv run medaibot serve      # http://127.0.0.1:8000, with /health, /ready, /ask and a demo page
 uv run medaibot eval       # writes eval/results/*.json and docs/failure-report.md
+uv run medaibot eval-followups   # scores follow-up classification on eval/followups.jsonl
 uv run pytest              # offline: no API keys, no downloads
 ```
 
@@ -75,7 +78,8 @@ Configuration is read from environment variables or `.env` (see `.env.example`).
 | `src/medaibot/corpus.py` | section-aware chunking with provenance |
 | `src/medaibot/index.py` | BM25, FAISS, RRF, filters, versioned save/load |
 | `src/medaibot/query.py` | drug alias detection and Japanese term mapping |
-| `src/medaibot/followup.py` | follow-up questions rewritten into standalone ones |
+| `src/medaibot/followup.py` | follow-ups classified, then rewritten into standalone questions or a question back |
+| `src/medaibot/followup_eval.py` | multi-turn scoring of the follow-up step |
 | `src/medaibot/tools.py` | typed tools with timeouts and readable errors |
 | `src/medaibot/agent.py` | bounded loop, retry, abstention |
 | `src/medaibot/grounding.py` | deterministic checks and the judge |
@@ -101,4 +105,4 @@ Free instances sleep after 15 minutes without traffic, so the first request afte
 - HTML table fields are skipped; tables that openFDA flattens into prose are indexed without their row and column structure.
 - The judge is a model and can be wrong. Nothing here is clinical validation.
 - Japanese support is text-level query mapping only. There is no speech recognition in this project.
-- Follow-up handling is covered by tests and live runs, but the evaluation set is single-turn.
+- The answer evaluation is single-turn. Follow-ups are scored only up to the standalone question, not end to end.

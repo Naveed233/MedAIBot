@@ -66,6 +66,8 @@ The first prompt allowed "return it unchanged if it stands on its own", and the 
 
 A second round of live tests found two more gaps: a continuation ("And for patients under 30 kg?") came back unchanged, and "give me the last response in Japanese" lost the question it referred to. The prompt now names both cases: a request to repeat, translate or simplify becomes the previous question in the language the user wants. Its examples use other drugs and questions than the demo ones, so the prompt is not tuned to the demo.
 
+Then "anything related to age?" after an IMFINZI dose question exposed a deeper problem. The rewrite pasted the whole earlier question and added "related to age", so the agent searched only the dosage section and missed 8.5 Geriatric Use. Follow-ups are a classification problem before they are a retrieval problem, so the model call now first labels the message: new, continuation, new topic about the same drug, redo, reply to "which drug?", or unclear. A new topic carries the drug and nothing else; a redo re-asks the previous question in the language wanted; unclear gets a question back ("TAGRISSO or LYNPARZA?") instead of a guess. The follow-up step has its own eval (`eval/followups.jsonl`, 16 cases), scored without running the agent, so a miss can be placed in the conversation step or in retrieval.
+
 ## AWS path
 
 Design only. Not deployed.
